@@ -2,14 +2,9 @@ import mongoose from "mongoose";
 import { IUser } from "../types";
 
 const UserSchema = new mongoose.Schema<IUser>({
-  id: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   password: {
     type: String,
-    required: true,
+    required: false,
   },
   username: {
     type: String,
@@ -21,7 +16,7 @@ const UserSchema = new mongoose.Schema<IUser>({
   },
   googleAuth: {
     type: String,
-    required: true,
+    required: false,
   },
   token: {
     type: String,
