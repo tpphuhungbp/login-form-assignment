@@ -15,11 +15,19 @@ dotenv.config();
 async function signInGoogle(req: Request, res: Response, next: NextFunction) {
   try {
     const { idToken } = req.body;
+
+    // if (token) {
+
+    //   const { tokens } = await client.getToken(token);
+
+    //   console.log("All token", tokens);
+
+    //   const idToken = tokens.id_token;
+
     if (idToken) {
       const clientID = process.env.GOOGLE_CLIENT_ID;
 
       const client = new OAuth2Client(clientID);
-
       const ticket = await client.verifyIdToken({
         idToken: idToken,
         audience: clientID,
@@ -28,6 +36,8 @@ async function signInGoogle(req: Request, res: Response, next: NextFunction) {
       const googlePayload = ticket.getPayload();
 
       if (!googlePayload?.email || googlePayload.email_verified !== true) {
+        res.status(httpStatus.UNAUTHORIZED).json({ message: "Email permissions not granted" });
+
         next(new BadRequestError("Email permissions not granted or email is unverified"));
         return;
       }
@@ -66,6 +76,7 @@ async function signIn(req: Request, res: Response, next: NextFunction) {
     const { email, password } = req.body;
 
     if (!email || !password) {
+      res.status(httpStatus.BAD_REQUEST).json({ message: "Missing email or password" });
       next(new InvalidParameterError("Email or password"));
       return;
     }
@@ -73,6 +84,8 @@ async function signIn(req: Request, res: Response, next: NextFunction) {
     const user = await UserRepository.getUserByEmail(email);
 
     if (!user) {
+      res.status(httpStatus.UNAUTHORIZED).json({ message: "Wrong password or email" });
+
       next(new UnauthorizedError("User not found"));
       return;
     }
@@ -80,6 +93,8 @@ async function signIn(req: Request, res: Response, next: NextFunction) {
     const correctPassword = await brycpt.compare(String(password), user.password);
 
     if (!correctPassword) {
+      res.status(httpStatus.UNAUTHORIZED).json({ message: "Wrong password or email" });
+
       next(new UnauthorizedError("Wrong password"));
       return;
     }
@@ -100,6 +115,8 @@ async function signUp(req: Request, res: Response, next: NextFunction) {
     const { email, password, username } = req.body;
 
     if (!email || !password) {
+      res.status(httpStatus.BAD_REQUEST).json({ message: "Missing email or password" });
+
       next(new InvalidParameterError("Email or password"));
       return;
     }
@@ -107,6 +124,8 @@ async function signUp(req: Request, res: Response, next: NextFunction) {
     const user = await UserRepository.getUserByEmail(email);
 
     if (user) {
+      res.status(httpStatus.BAD_REQUEST).json({ message: "User already exists" });
+
       next(new BadRequestError("User already exists"));
       return;
     }
