@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./register.css";
-import GoogleLogo from "./GoogleLogo.png";
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [email, setEmail] = useState<string>("");
@@ -8,22 +9,51 @@ export default function Register() {
   const [username, setUsername] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (email === "" || username === "" || password === "") {
-      setErrorMessage("Please fill in all fields.");
-    } else {
-      setErrorMessage("");
-      // Handle register logic here
-      console.log("Email:", email);
-      console.log("Username:", username);
-      console.log("Password:", password);
-      // You can add further register logic like API calls here
+    try {
+      if (email === "" || username === "" || password === "") {
+        setErrorMessage("Please fill in all fields.");
+      } else {
+        setErrorMessage("");
+
+        const response = await fetch("http://localhost:8000/api/v1/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email, username: username, password: password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log("Sign up successful", data);
+          localStorage.setItem("accessToken", data.token);
+          navigate("/home");
+        } else {
+          setErrorMessage(data.message);
+        }
+      }
+    } catch (err) {
+      throw err;
     }
   };
-  const handleGoogleLogin = () => {
-    // Handle Google register logic here
-    console.log("Google register clicked");
+  const handleGoogleLogin = async (token: string | undefined) => {
+    const response = await fetch("http://localhost:8000/api/v1/auth/signin-google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: token }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log("Signin successful", data);
+      localStorage.setItem("accessToken", data.token);
+      navigate("/home");
+    } else {
+      setErrorMessage(data.message);
+    }
   };
 
   return (
@@ -64,14 +94,15 @@ export default function Register() {
           />
         </div>
         {errorMessage && <p className="error-message">{errorMessage}</p>}
-        <button type="submit" className="submit-button">
-          Create account
-        </button>
+        <GoogleLogin
+          onSuccess={(credentialResponse) => {
+            handleGoogleLogin(credentialResponse.credential);
+          }}
+          onError={() => {
+            console.log("Login Failed");
+          }}
+        />
       </form>
-      <button onClick={handleGoogleLogin} className="google-button">
-        <img src={GoogleLogo} className="google-logo" alt="logo" />
-        Authenticate with Google
-      </button>
       <div className="signup-link-container">
         <a href="/login" className="signup-link">
           Back to log in

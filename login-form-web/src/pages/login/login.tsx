@@ -1,29 +1,54 @@
 import React, { useState } from "react";
 import "./login.css";
-import GoogleLogo from "./GoogleLogo.png";
-
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
 export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (email === "" || username === "" || password === "") {
+    if (email === "" || password === "") {
       setErrorMessage("Please fill in all fields.");
     } else {
       setErrorMessage("");
-      // Handle login logic here
-      console.log("Email:", email);
-      console.log("Username:", username);
-      console.log("Password:", password);
-      // You can add further login logic like API calls here
+
+      const response = await fetch("http://localhost:8000/api/v1/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Login successful", data);
+        localStorage.setItem("accessToken", data.token);
+        navigate("/home");
+      } else {
+        setErrorMessage(data.message);
+      }
     }
   };
-  const handleGoogleLogin = () => {
-    // Handle Google login logic here
-    console.log("Google login clicked");
+
+  const handleGoogleLogin = async (token: string | undefined) => {
+    const response = await fetch("http://localhost:8000/api/v1/auth/signin-google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: token }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log("Signin successful", data);
+      localStorage.setItem("accessToken", data.token);
+      navigate("/home");
+    } else {
+      setErrorMessage(data.message);
+    }
   };
 
   return (
@@ -59,10 +84,14 @@ export default function Login() {
         </button>
       </form>
       <p>or</p>
-      <button onClick={handleGoogleLogin} className="google-button">
-        <img src={GoogleLogo} className="google-logo" alt="logo" />
-        Login with Google
-      </button>
+      <GoogleLogin
+        onSuccess={(credentialResponse) => {
+          handleGoogleLogin(credentialResponse.credential);
+        }}
+        onError={() => {
+          console.log("Login Failed");
+        }}
+      />
       <div className="signup-link-container">
         <p>
           Don't have an account?{" "}

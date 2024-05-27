@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 // import { useAuth } from "./useAuth"; // Replace with your auth hook
 
 interface PrivateRouteProps {
@@ -7,9 +7,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const isLoggedIn = false;
-
-  return isLoggedIn ? (
+  return false ? (
     <>
       {children}
       <Outlet />
